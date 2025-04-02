@@ -1,95 +1,44 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useState, useEffect } from "react";
+import { db, collection, query, where, onSnapshot } from "../../lib/firebase"; // Import necessary Firebase functions
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [orders, setOrders] = useState([]);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  useEffect(() => {
+    // Fetch orders in real-time
+    const q = query(collection(db, "orders"), where("status", "in", ["pending", "in progress"])); // Fetch pending and in-progress orders
+
+    // Listen to Firestore collection changes
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const ordersList = [];
+      querySnapshot.forEach((doc) => {
+        ordersList.push({ ...doc.data(), id: doc.id });
+      });
+      setOrders(ordersList); // Set the fetched orders to state
+    });
+
+    // Cleanup function to unsubscribe from the Firestore listener
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <div className="home-container">
+      <h1>Welcome to Pancake Night!</h1>
+      <div className="orders-list">
+        {orders.length === 0 ? (
+          <p>No orders yet. Be the first to submit one!</p>
+        ) : (
+          orders.map((order) => (
+            <div key={order.id} className="order-card">
+              <h3>Order from: {order.name}</h3>
+              <p>Status: {order.status}</p>
+              <p>Options: {order.selectedOptions.join(", ")}</p>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
