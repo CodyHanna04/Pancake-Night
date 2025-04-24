@@ -12,7 +12,9 @@ export default function Layout({ children }) {
       <body>
         <header className="header">
           <div className="logo-container">
-            <h1 className="logo">Pancake Night</h1>
+            <h1 className="logo">
+            Pancake Night
+            </h1>
           </div>
           <nav className="navbar">
             <Link href="/" className="nav-link">Home</Link>
