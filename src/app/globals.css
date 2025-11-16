@@ -1,3 +1,27 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Makes the footer stick to the bottom on short pages */
+.layout-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Allows main content to grow and push the footer down */
+.layout-main {
+  flex: 1;
+}
+
 /* === General Styles === */
 body {
   font-family: 'Arial', sans-serif;
@@ -64,8 +88,21 @@ button:hover {
   margin-bottom: 80px;
 }
 
+/* Main body styles */
 body {
-  padding-top: 120px; /* Add padding to the body to ensure content doesn't overlap with the header */
+  font-family: 'Arial', sans-serif;
+  background-color: #000000; /* Black background */
+  color: #FFFFFF; /* White text */
+  min-height: 100vh;
+  margin: 0;
+  padding: 120px 0 0 0; /* ONLY top padding for fixed header */
+}
+
+/* Extra-small phones: just adjust top padding, no side padding */
+@media (max-width: 480px) {
+  body {
+    padding-top: 130px; /* a touch more room for the stacked header */
+  }
 }
 
 .navbar {
@@ -254,4 +291,361 @@ body {
 /* Optional: Hide the notification after a short time */
 .notification.hidden {
   opacity: 0;
+}
+
+.order-page-layout {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+/* Stack on mobile */
+@media (max-width: 768px) {
+  .order-page-layout {
+    flex-direction: column;
+  }
+}
+
+.recent-orders-container {
+  flex: 0 0 280px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.recent-help-text {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: -0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.recent-orders-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recent-order-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.recent-order-item:last-child {
+  border-bottom: none;
+}
+
+.recent-order-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.recent-order-options {
+  opacity: 0.9;
+}
+
+.recent-order-notes {
+  font-style: italic;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.recent-empty {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.order-submission-container {
+  width: 100%;
+  padding-right: 1.5rem;   /* <-- fixes textboxes hitting the edge */
+  padding-left: 1rem;
+  box-sizing: border-box;
+}
+
+.chat-widget-container {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 9999;
+}
+
+.chat-toggle-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  background: #fbbf24; /* warm pancake-y yellow */
+  color: #111827;
+  font-weight: 600;
+}
+
+.chat-panel {
+  position: absolute;
+  right: 0;
+  bottom: 3.25rem;
+  width: 280px;
+  max-height: 380px;
+  background: #111827;
+  color: #f9fafb;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 0.5rem 0.75rem;
+  background: #1f2937;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.chat-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-name-row {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.chat-name-input {
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.chat-message {
+  margin-bottom: 0.4rem;
+  max-width: 90%;
+}
+
+.chat-message-self {
+  margin-left: auto;
+  text-align: right;
+}
+
+.chat-message-meta {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.chat-message-text {
+  background: #374151;
+  border-radius: 10px;
+  padding: 0.3rem 0.5rem;
+  margin-top: 0.1rem;
+}
+
+.chat-message-self .chat-message-text {
+  background: #fbbf24;
+  color: #111827;
+}
+
+.chat-input-row {
+  display: flex;
+  padding: 0.4rem 0.5rem 0.5rem;
+  gap: 0.25rem;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
+.chat-send-button {
+  border: none;
+  border-radius: 999px;
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: #10b981;
+  color: #ecfdf5;
+  font-weight: 600;
+}
+
+/* Login Page Layout */
+.login-page-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* make sure we have side padding on all screen sizes */
+  padding: 1rem 2rem;
+
+  background: #0f0f0f; /* dark background */
+}
+
+/* Login Form Card */
+.login-form {
+  width: 100%;
+  max-width: 380px;
+  background: #1a1a1a;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  text-align: center;
+  color: #f8f8f8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  /* this guarantees space from the edges even on tiny screens */
+  margin: 0 auto;
+}
+
+
+/* Header */
+.login-form h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.login-subtext {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 1.5rem;
+}
+
+/* Inputs */
+.login-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+  background: #262626;
+  color: #fff;
+  outline: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-input:focus {
+  background: #333;
+  box-shadow: 0 0 0 2px #fbbf24; /* pancake yellow */
+}
+
+/* Submit Button */
+.login-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #fbbf24; /* pancake yellow */
+  color: #000;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.login-button:hover {
+  background: #f1b016;
+}
+
+.login-button:active {
+  transform: scale(0.97);
+}
+
+/* Error Message */
+.login-error {
+  margin-top: 1rem;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+/* === Mobile Header / Navbar Tweaks === */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 14px 6px;
+  }
+
+  .logo-container {
+    margin-bottom: 8px;
+  }
+
+  .navbar {
+    width: 100%;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .nav-link {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+}
+
+/* Extra-small phones */
+@media (max-width: 480px) {
+  body {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 130px; /* a touch more room for the stacked header */
+  }
+
+  .header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+/* === Guest Page Layout === */
+.guest-page-container {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1rem 0;
+}
+
+.guest-card {
+  background: #333333;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+}
+
+/* Adjust guest layout on mobile only */
+@media (max-width: 768px) {
+  .order-page-layout {
+    padding-top: 0.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .order-submission-container {
+    padding: 1.25rem 1rem;
+  }
+
+  .order-input,
+  .order-textarea,
+  .submit-button {
+    font-size: 0.95rem;
+  }
 }

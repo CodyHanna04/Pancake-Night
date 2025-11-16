@@ -1,3 +1,4 @@
+// src/app/kitchen-display/page.js
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,9 +12,10 @@ import {
   doc,
   orderBy,
 } from "../../../lib/firebase";
-import { AlignCenter } from "lucide-react";
+import RequireAdmin from "../components/RequireAdmin";
+import ChatWidget from "../components/ChatWidget";
 
-export default function KitchenDisplay() {
+function KitchenDisplayInner() {
   const [orders, setOrders] = useState([]);
   const [notification, setNotification] = useState(null);
 
@@ -26,8 +28,8 @@ export default function KitchenDisplay() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const ordersList = [];
-      querySnapshot.forEach((doc) => {
-        ordersList.push({ ...doc.data(), id: doc.id });
+      querySnapshot.forEach((docSnap) => {
+        ordersList.push({ ...docSnap.data(), id: docSnap.id });
       });
       setOrders(ordersList);
     });
@@ -62,22 +64,30 @@ export default function KitchenDisplay() {
 
   return (
     <div className="kitchen-display-container">
-            {notification && (
-        <div className="notification ${notification ? '' : 'hidden">
+      {/* Floating chat widget */}
+      <ChatWidget />
+
+      {notification && (
+        <div className={`notification ${notification ? "" : "hidden"}`}>
           {notification}
         </div>
       )}
+
       <h2 className="text-2xl font-bold">Kitchen Display</h2>
-      {/* Use columns-container for horizontal columns */}
+
       <div className="columns-container">
-        {Object.entries(groupedOrders).map(([status, orders]) => (
+        {Object.entries(groupedOrders).map(([status, statusOrders]) => (
           <div key={status} className="order-column">
             <h3 className="text-xl font-semibold mb-2">{status}</h3>
-            {orders.map((order) => (
+            {statusOrders.map((order) => (
               <div key={order.id} className="order-card">
                 <h4 className="font-bold">{order.name}</h4>
-                <p className="text-sm">{order.selectedOptions.join(", ")}</p>
-                {order.notes && <p className="text-sm italic">Notes: {order.notes}</p>}
+                <p className="text-sm">
+                  {order.selectedOptions?.join(", ")}
+                </p>
+                {order.notes && (
+                  <p className="text-sm italic">Notes: {order.notes}</p>
+                )}
                 <p className="text-xs">
                   Submitted:{" "}
                   {order.createdAt
@@ -85,19 +95,13 @@ export default function KitchenDisplay() {
                     : "Loading..."}
                 </p>
                 <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={() => updateOrderStatus(order.id, "Cooking")}
-                  >
+                  <button onClick={() => updateOrderStatus(order.id, "Cooking")}>
                     Cooking
                   </button>
-                  <button
-                    onClick={() => updateOrderStatus(order.id, "Delayed")}
-                  >
+                  <button onClick={() => updateOrderStatus(order.id, "Delayed")}>
                     Delayed
                   </button>
-                  <button
-                    onClick={() => updateOrderStatus(order.id, "Done")}
-                  >
+                  <button onClick={() => updateOrderStatus(order.id, "Done")}>
                     Done
                   </button>
                 </div>
@@ -107,5 +111,14 @@ export default function KitchenDisplay() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Admin-only wrapper
+export default function KitchenDisplay() {
+  return (
+    <RequireAdmin>
+      <KitchenDisplayInner />
+    </RequireAdmin>
   );
 }

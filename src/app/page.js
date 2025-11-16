@@ -1,8 +1,9 @@
+// src/app/page.js 
 "use client";
 
 import { useState, useEffect } from "react";
+import { db } from "../../lib/firebase";
 import {
-  db,
   collection,
   query,
   where,
@@ -11,11 +12,13 @@ import {
   doc,
   orderBy,
   serverTimestamp,
-} from "../../lib/firebase";
+} from "firebase/firestore";
+import ChatWidget from "./components/ChatWidget";
+import RequireAdmin from "./components/RequireAdmin";
 
-export default function HomeOrders() {
+function HomeOrdersInner() {
   const [orders, setOrders] = useState([]);
-  const [notification, setNotification] = useState([]);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     const q = query(
@@ -26,8 +29,8 @@ export default function HomeOrders() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const ordersList = [];
-      querySnapshot.forEach((doc) => {
-        ordersList.push({ ...doc.data(), id: doc.id });
+      querySnapshot.forEach((docSnap) => {
+        ordersList.push({ ...docSnap.data(), id: docSnap.id });
       });
       setOrders(ordersList);
     });
@@ -38,7 +41,7 @@ export default function HomeOrders() {
   const handleRemoveOrder = async (orderId) => {
     try {
       const orderRef = doc(db, "orders", orderId);
-      await updateDoc(doc(db, "orders", orderId), {
+      await updateDoc(orderRef, {
         status: "completed",
         completedAt: serverTimestamp(),
       });
@@ -46,6 +49,7 @@ export default function HomeOrders() {
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
       console.error("Error removing order:", error);
+      setNotification("Failed to remove order");
       setTimeout(() => setNotification(null), 3000);
     }
   };
@@ -65,25 +69,36 @@ export default function HomeOrders() {
 
   return (
     <div className="home-orders-container">
+      {/* Floating chat widget */}
+      <ChatWidget />
+
       <h2 className="text-2xl font-bold">Current Orders</h2>
+
       {notification && (
-        <div className="notification ${notification ? '' : 'hidden">
+        <div className={`notification ${notification ? "" : "hidden"}`}>
           {notification}
         </div>
       )}
+
       <div className="columns-container">
-        {Object.entries(groupedOrders).map(([status, orders]) => (
+        {Object.entries(groupedOrders).map(([status, statusOrders]) => (
           <div key={status} className="order-column">
             <h3 className="text-xl font-semibold mb-2">{status}</h3>
-            {orders.map((order) => (
+            {statusOrders.map((order) => (
               <div key={order.id} className="order-card">
                 <h4 className="font-bold">{order.name}</h4>
-                <p className="text-sm">{order.selectedOptions.join(", ")}</p>
-                {order.notes && <p className="text-sm italic">Notes: {order.notes}</p>}
+                <p className="text-sm">
+                  {order.selectedOptions?.join(", ") || "No options"}
+                </p>
+                {order.notes && (
+                  <p className="text-sm italic">Notes: {order.notes}</p>
+                )}
                 <p className="text-xs">
                   Submitted:{" "}
-                  {order.createdAt
-                    ? new Date(order.createdAt.seconds * 1000).toLocaleTimeString()
+                  {order.createdAt?.seconds
+                    ? new Date(
+                        order.createdAt.seconds * 1000
+                      ).toLocaleTimeString()
                     : "Loading..."}
                 </p>
                 <button onClick={() => handleRemoveOrder(order.id)}>
@@ -95,5 +110,14 @@ export default function HomeOrders() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Admin-only wrapper for the home page
+export default function HomePage() {
+  return (
+    <RequireAdmin>
+      <HomeOrdersInner />
+    </RequireAdmin>
   );
 }

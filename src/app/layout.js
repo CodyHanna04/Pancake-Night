@@ -1,5 +1,7 @@
 import "./globals.css";
-import Link from "next/link";
+import { AuthProvider } from "./context/AuthContext";
+import HeaderClient from "./components/HeaderClient";
+import Footer from "./components/Footer";
 
 export const metadata = {
   title: "KDS System",
@@ -9,20 +11,12 @@ export const metadata = {
 export default function Layout({ children }) {
   return (
     <html lang="en">
-      <body>
-        <header className="header">
-          <div className="logo-container">
-            <h1 className="logo">
-            Pancake Night
-            </h1>
-          </div>
-          <nav className="navbar">
-            <Link href="/" className="nav-link">Home</Link>
-            <Link href="/order-submission" className="nav-link">Order Submission</Link>
-            <Link href="/kitchen-display" className="nav-link">Kitchen</Link>
-          </nav>
-        </header>
-        <main className="container">{children}</main>
+      <body className="layout-body">
+        <AuthProvider>
+          <HeaderClient />
+          <main className="layout-main">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
