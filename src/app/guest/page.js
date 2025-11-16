@@ -300,7 +300,7 @@ function GuestPageInner() {
         {notification && <div className="notification">{notification}</div>}
 
         <h2>Guest Order</h2>
-        <p style={{ marginBottom: "10px" }}>
+        <p style={{ marginBottom: "10px", color: "white" }}>
           Submit your order and track its status below.
         </p>
 
@@ -325,7 +325,7 @@ function GuestPageInner() {
               marginBottom: "10px",
             }}
           >
-            Your name is missing from your profile. Please update it in your
+            Your name is missing from your profile. Please ask a brother to help update it in your
             account to ensure your orders are labeled correctly.
           </p>
         )}

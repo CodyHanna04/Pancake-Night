@@ -649,3 +649,28 @@ body {
     font-size: 0.95rem;
   }
 }
+
+/* === Override order layout so form is centered and recent stays right === */
+
+/* Desktop and larger only – mobile stays stacked */
+@media (min-width: 1024px) {
+  .order-page-layout {
+    /* stop flex from shifting the form */
+    display: block;
+    max-width: none;
+  }
+
+  /* Center the order submission box on the screen */
+  .order-submission-container {
+    max-width: 600px;              /* keep your original size */
+    margin: 80px auto 20px;        /* auto left/right = centered */
+  }
+
+  /* Keep recent orders on the right, independent of the form */
+  .recent-orders-container {
+    position: fixed;               /* pinned to screen, not affecting layout */
+    top: 140px;                    /* just under your fixed header */
+    right: 20px;
+    width: 280px;                  /* same width you were using */
+  }
+}

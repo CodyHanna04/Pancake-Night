@@ -44,7 +44,7 @@ export default function SignupPage() {
       await setDoc(userDocRef, {
         email: user.email,
         name: name || null,
-        role: 'customer', // default role, you can change manually to 'admin' in Firestore
+        role: 'guest', // default role, you can change manually to 'admin' in Firestore
         createdAt: new Date(),
       });
 
