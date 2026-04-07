@@ -155,7 +155,7 @@ function OrderPageInner() {
           />
           <div className="options-container">
             <ul className="options-list">
-              {["Plain", "Chocolate Chip", "Banana", "Blueberry"].map(
+              {["Plain", "Chocolate Chip", "Banana", "Blueberry", "Special"].map(
                 (option) => (
                   <li key={option}>
                     <label className="checkbox-label">
