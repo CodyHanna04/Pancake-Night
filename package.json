@@ -6,13 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "set-admin": "node --env-file=.env.local scripts/setAdminClaim.mjs",
+    "approve-all": "node --env-file=.env.local scripts/approveAllUsers.mjs",
+    "audit:permissions": "node --env-file=.env.local scripts/permAudit.mjs",
+    "deploy:rules": "node --env-file=.env.local scripts/deployRules.mjs",
+    "deploy:indexes": "node --env-file=.env.local scripts/deployIndexes.mjs"
   },
   "dependencies": {
     "firebase": "^11.6.0",
+    "firebase-admin": "^14.1.0",
     "framer-motion": "^12.7.3",
+    "jose": "^6.2.3",
     "lucide-react": "^0.487.0",
     "next": "^15.5.9",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.2"

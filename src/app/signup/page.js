@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../../../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -39,17 +39,18 @@ export default function SignupPage() {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
 
-      // Create Firestore user doc with default role "customer"
+      // Profile doc. Enforcement of approval is the custom claim (set by an
+      // admin) — this field just drives the pending list and UI.
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, {
         email: user.email,
         name: name || null,
-        role: 'guest', // default role, you can change manually to 'admin' in Firestore
-        createdAt: new Date(),
+        approved: false,
+        createdAt: serverTimestamp(),
       });
 
-      // After signup, send them to login
-      router.push('/login');
+      // New accounts wait for admin approval before they can order
+      router.push('/pending');
     } catch (err) {
       console.error('Signup failed:', err);
       let message = 'Signup failed. Please try again.';
@@ -73,7 +74,8 @@ export default function SignupPage() {
       <form onSubmit={handleSignup} className="login-form">
         <h2>Sign Up</h2>
         <p className="login-subtext">
-          Create an account to place orders and access Pancake Night tools.
+          Create an account to place orders. A brother will need to approve
+          your account before your first order.
         </p>
 
         <input

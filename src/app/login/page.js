@@ -3,9 +3,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../../../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,31 +23,24 @@ export default function LoginPage() {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
 
-      // Look up role in Firestore
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
+      // Admin status comes from the custom claim on the token
+      const tokenResult = await user.getIdTokenResult();
+      const isAdmin = tokenResult.claims.admin === true;
 
-      let role = 'customer';
-      if (userDocSnap.exists()) {
-        const data = userDocSnap.data();
-        if (data.role) {
-          role = data.role;
-        }
-      }
-
-      if (role === 'admin') {
-        // Admin → main admin page at "/"
-        const token = await user.getIdToken();
-
-        await fetch('/api/sessionLogin', {
+      if (isAdmin) {
+        // Mint the session cookie the middleware checks on admin pages
+        const res = await fetch('/api/sessionLogin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token: tokenResult.token }),
         });
+
+        if (!res.ok) {
+          throw new Error(`Session login failed (${res.status})`);
+        }
 
         router.push('/');
       } else {
-        // Guests/customers → guest page
         router.push('/guest');
       }
     } catch (err) {
@@ -89,6 +82,13 @@ export default function LoginPage() {
         </button>
 
         {error && <p className="login-error">{error}</p>}
+
+        <p className="login-subtext" style={{ marginTop: '1rem' }}>
+          Need an account?{' '}
+          <Link href="/signup" style={{ textDecoration: 'underline', color: '#fbbf24' }}>
+            Sign up
+          </Link>
+        </p>
       </form>
     </div>
   );

@@ -1,81 +1,40 @@
-// src/app/admin/page.js
+// src/app/admin/page.js — admin settings (analytics live at /admin/metrics)
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query,
-  doc,
-  getDoc,
-  setDoc,
-} from "firebase/firestore";
-import { db, auth } from "../../../lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
+import QRCode from "qrcode";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import RequireAdmin from "../components/RequireAdmin";
+import { DEFAULT_WAIT_THRESHOLDS } from "@/lib/constants";
 
-function AdminDashboardInner() {
-  const [allOrders, setAllOrders] = useState([]);
-  const [selectedWeek, setSelectedWeek] = useState("");
-  const [weeks, setWeeks] = useState([]);
-
-  // Guest ordering config state
+function AdminSettingsInner() {
+  // Guest ordering config
   const [guestEnabled, setGuestEnabled] = useState(true);
   const [guestDay, setGuestDay] = useState(3); // Wednesday default
   const [startHour, setStartHour] = useState(22); // 10pm
   const [endHour, setEndHour] = useState(0); // midnight
   const [savingConfig, setSavingConfig] = useState(false);
 
-  const [analytics, setAnalytics] = useState({
-    avgWait: 0,
-    pancakeCounts: {},
-    quarterHourCounts: {},
-    totalOrders: 0,
-  });
+  // Wait-time card coloring thresholds (kitchen + home)
+  const [warnMinutes, setWarnMinutes] = useState(
+    DEFAULT_WAIT_THRESHOLDS.warnMinutes
+  );
+  const [dangerMinutes, setDangerMinutes] = useState(
+    DEFAULT_WAIT_THRESHOLDS.dangerMinutes
+  );
+  const [savingDisplay, setSavingDisplay] = useState(false);
 
-  // Fetch orders for analytics when an admin is logged in
-  useEffect(() => {
-    const fetchOrders = async () => {
-      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
+  // QR code for guest ordering
+  const qrCanvasRef = useRef(null);
+  const [qrUrl, setQrUrl] = useState("");
 
-      const orders = [];
-      const weekSet = new Set();
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.createdAt) {
-          const createdDate = data.createdAt.toDate();
-          const year = createdDate.getFullYear();
-          const week = getWeek(createdDate);
-          const weekKey = `${year}-W${week}`;
-          weekSet.add(weekKey);
-          orders.push({ ...data, createdAt: createdDate, weekKey });
-        }
-      });
-
-      const weekArray = Array.from(weekSet).sort().reverse();
-      setWeeks(weekArray);
-      setAllOrders(orders);
-      if (weekArray.length > 0) {
-        setSelectedWeek(weekArray[0]); // default to latest
-      }
-    };
-
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) fetchOrders();
-    });
-
-    return () => unsub();
-  }, []);
-
-  // Load guest ordering config from Firestore
+  // Load guest ordering config
   useEffect(() => {
     async function loadGuestConfig() {
       try {
-        const configRef = doc(db, "config", "guestOrdering");
-        const snap = await getDoc(configRef);
+        const snap = await getDoc(doc(db, "config", "guestOrdering"));
         if (snap.exists()) {
           const data = snap.data();
           setGuestEnabled(data.enabled ?? true);
@@ -91,63 +50,45 @@ function AdminDashboardInner() {
     loadGuestConfig();
   }, []);
 
-  // Recompute analytics when week or orders change
+  // Load wait-time thresholds
   useEffect(() => {
-    if (!selectedWeek) return;
-
-    const filtered = allOrders.filter(
-      (order) => order.weekKey === selectedWeek
-    );
-    const pancakeCounts = {};
-    const quarterHourCounts = {};
-    let totalWait = 0;
-    let totalOrders = 0;
-
-    filtered.forEach((order) => {
-      totalOrders += 1;
-
-      if (order.completedAt) {
-        const completed = order.completedAt.toDate();
-        totalWait += (completed - order.createdAt) / 1000; // seconds
+    async function loadDisplayConfig() {
+      try {
+        const snap = await getDoc(doc(db, "config", "display"));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (typeof data.warnMinutes === "number") setWarnMinutes(data.warnMinutes);
+          if (typeof data.dangerMinutes === "number") setDangerMinutes(data.dangerMinutes);
+        }
+      } catch (err) {
+        console.error("Error loading display config:", err);
       }
+    }
 
-      if (Array.isArray(order.selectedOptions)) {
-        order.selectedOptions.forEach((item) => {
-          pancakeCounts[item] = (pancakeCounts[item] || 0) + 1;
-        });
-      }
+    loadDisplayConfig();
+  }, []);
 
-      const mins = order.createdAt.getMinutes();
-      const roundedMins = Math.floor(mins / 15) * 15;
-      const timeSlot = `${order.createdAt
-        .getHours()
-        .toString()
-        .padStart(2, "0")}:${roundedMins.toString().padStart(2, "0")}`;
-      quarterHourCounts[timeSlot] =
-        (quarterHourCounts[timeSlot] || 0) + 1;
-    });
+  // Render the guest-ordering QR code (encodes this deployment's domain)
+  useEffect(() => {
+    const url = `${window.location.origin}/guest`;
+    setQrUrl(url);
+    if (qrCanvasRef.current) {
+      QRCode.toCanvas(qrCanvasRef.current, url, {
+        width: 220,
+        margin: 2,
+        color: { dark: "#000000", light: "#ffffff" },
+      }).catch((err) => console.error("QR render failed:", err));
+    }
+  }, []);
 
-    setAnalytics({
-      avgWait:
-        totalOrders > 0
-          ? (totalWait / totalOrders / 60).toFixed(2)
-          : 0,
-      pancakeCounts,
-      quarterHourCounts,
-      totalOrders,
-    });
-  }, [selectedWeek, allOrders]);
-
-  const getWeek = (date) => {
-    const firstDay = new Date(date.getFullYear(), 0, 1);
-    const dayDiff =
-      (date -
-        firstDay +
-        (firstDay.getTimezoneOffset() - date.getTimezoneOffset()) *
-          60000) /
-      86400000;
-    return Math.floor((dayDiff + firstDay.getDay() + 1) / 7);
-  };
+  function downloadQr() {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "pancake-night-qr.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
 
   async function saveGuestConfig() {
     setSavingConfig(true);
@@ -167,71 +108,50 @@ function AdminDashboardInner() {
     setSavingConfig(false);
   }
 
+  async function saveDisplayConfig() {
+    if (dangerMinutes <= warnMinutes) {
+      alert("Red threshold must be higher than yellow.");
+      return;
+    }
+    setSavingDisplay(true);
+    try {
+      await setDoc(doc(db, "config", "display"), {
+        warnMinutes,
+        dangerMinutes,
+      });
+      alert("Wait-time settings saved!");
+    } catch (err) {
+      console.error("Error saving display config:", err);
+      alert("Failed to save settings.");
+    }
+    setSavingDisplay(false);
+  }
+
   return (
     <div style={styles.container}>
-      <h2 style={styles.header}>🥞 Pancake Night Dashboard</h2>
+      <h2 style={styles.header}>⚙️ Settings</h2>
 
-      {/* Week Filter */}
-      <div style={styles.section}>
-        <label style={styles.label}>Filter by Week:</label>
-        <select
-          value={selectedWeek}
-          onChange={(e) => setSelectedWeek(e.target.value)}
-          style={styles.select}
-        >
-          {weeks.map((week) => (
-            <option key={week} value={week}>
-              {week}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Summary */}
-      <div style={styles.section}>
-        <h3>Summary</h3>
-        <p>
-          <strong>Total Orders:</strong> {analytics.totalOrders}
-        </p>
-        <p>
-          <strong>Average Wait Time:</strong> {analytics.avgWait} minutes
-        </p>
-      </div>
-
-      {/* Pancake Counts */}
-      <div style={styles.section}>
-        <h3>Pancake Counts</h3>
-        <ul>
-          {Object.entries(analytics.pancakeCounts).map(
-            ([type, count]) => (
-              <li key={type}>
-                {type}: {count}
-              </li>
-            )
-          )}
-        </ul>
-      </div>
-
-      {/* Busy Periods */}
-      <div style={styles.section}>
-        <h3>Busy Periods (15-min intervals)</h3>
-        <ul>
-          {Object.entries(analytics.quarterHourCounts)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([time, count]) => (
-              <li key={time}>
-                {time} → {count} orders
-              </li>
-            ))}
-        </ul>
-      </div>
+      <Link
+        href="/admin/metrics"
+        style={{
+          display: "inline-block",
+          marginBottom: "30px",
+          padding: "12px 24px",
+          background: "#ff8f00",
+          color: "#000",
+          fontWeight: "bold",
+          borderRadius: "8px",
+          textDecoration: "none",
+        }}
+      >
+        📊 Open Metrics Dashboard →
+      </Link>
 
       {/* Guest Ordering Settings */}
       <div style={styles.section}>
-        <h3 style={{ color: "#ff8f00" }}>Guest Ordering Settings</h3>
+        <h3 style={{ color: "#ff8f00" }}>Guest Ordering</h3>
 
-        {/* Enable/disable toggle */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={styles.field}>
           <label style={styles.label}>Guest Ordering Enabled:</label>
           <select
             value={guestEnabled ? "true" : "false"}
@@ -243,8 +163,7 @@ function AdminDashboardInner() {
           </select>
         </div>
 
-        {/* Day of week */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={styles.field}>
           <label style={styles.label}>Day of Week:</label>
           <select
             value={guestDay}
@@ -261,8 +180,7 @@ function AdminDashboardInner() {
           </select>
         </div>
 
-        {/* Start time */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={styles.field}>
           <label style={styles.label}>Start Hour (24h):</label>
           <input
             type="number"
@@ -270,16 +188,11 @@ function AdminDashboardInner() {
             max="23"
             value={startHour}
             onChange={(e) => setStartHour(Number(e.target.value))}
-            style={{
-              ...styles.select,
-              width: "90px",
-              textAlign: "center",
-            }}
+            style={{ ...styles.select, width: "90px", textAlign: "center" }}
           />
         </div>
 
-        {/* End time */}
-        <div style={{ marginBottom: "15px" }}>
+        <div style={styles.field}>
           <label style={styles.label}>End Hour (24h):</label>
           <input
             type="number"
@@ -287,31 +200,66 @@ function AdminDashboardInner() {
             max="23"
             value={endHour}
             onChange={(e) => setEndHour(Number(e.target.value))}
-            style={{
-              ...styles.select,
-              width: "90px",
-              textAlign: "center",
-            }}
+            style={{ ...styles.select, width: "90px", textAlign: "center" }}
           />
         </div>
 
-        {/* Save button */}
-        <button
-          onClick={saveGuestConfig}
-          disabled={savingConfig}
-          style={{
-            padding: "10px 20px",
-            background: "#ff8f00",
-            borderRadius: "6px",
-            border: "none",
-            color: "#fff",
-            fontWeight: "bold",
-            cursor: savingConfig ? "default" : "pointer",
-            marginTop: "10px",
-            opacity: savingConfig ? 0.7 : 1,
-          }}
-        >
-          {savingConfig ? "Saving…" : "Save Settings"}
+        <button onClick={saveGuestConfig} disabled={savingConfig} style={styles.saveButton}>
+          {savingConfig ? "Saving…" : "Save Guest Settings"}
+        </button>
+      </div>
+
+      {/* Wait-time card coloring */}
+      <div style={styles.section}>
+        <h3 style={{ color: "#ff8f00" }}>Wait-Time Card Colors</h3>
+        <p style={styles.hint}>
+          Kitchen and Home cards turn yellow, then red, as customers wait.
+          The timer freezes when an order is marked Done.
+        </p>
+
+        <div style={styles.field}>
+          <label style={styles.label}>🟡 Yellow after (minutes):</label>
+          <input
+            type="number"
+            min="1"
+            max="60"
+            value={warnMinutes}
+            onChange={(e) => setWarnMinutes(Number(e.target.value))}
+            style={{ ...styles.select, width: "90px", textAlign: "center" }}
+          />
+        </div>
+
+        <div style={styles.field}>
+          <label style={styles.label}>🔴 Red after (minutes):</label>
+          <input
+            type="number"
+            min="2"
+            max="120"
+            value={dangerMinutes}
+            onChange={(e) => setDangerMinutes(Number(e.target.value))}
+            style={{ ...styles.select, width: "90px", textAlign: "center" }}
+          />
+        </div>
+
+        <button onClick={saveDisplayConfig} disabled={savingDisplay} style={styles.saveButton}>
+          {savingDisplay ? "Saving…" : "Save Wait-Time Settings"}
+        </button>
+      </div>
+
+      {/* QR code */}
+      <div style={styles.section}>
+        <h3 style={{ color: "#ff8f00" }}>Guest Ordering QR Code</h3>
+        <p style={styles.hint}>
+          Print this and put it on the tables. It links to <strong>{qrUrl}</strong> —
+          signed-in guests go straight to ordering; new people are sent to
+          log in / sign up first.
+        </p>
+        <canvas
+          ref={qrCanvasRef}
+          style={{ borderRadius: "8px", display: "block", marginBottom: "15px", maxWidth: "100%" }}
+        />
+        <button onClick={downloadQr} style={styles.saveButton}>
+          ⬇ Download PNG
         </button>
       </div>
     </div>
@@ -320,31 +268,42 @@ function AdminDashboardInner() {
 
 const styles = {
   container: {
-    padding: "30px",
-    fontFamily: "Arial, sans-serif",
-    background: "#000", // Black background
-    color: "#fff", // White text
+    padding: "24px 16px",
+    maxWidth: "760px",
+    margin: "0 auto",
+    color: "#fff",
     minHeight: "100vh",
   },
   header: {
-    fontSize: "2.5rem",
-    color: "#ff8f00", // Princeton orange
-    marginBottom: "30px",
+    fontSize: "2.2rem",
+    color: "#ff8f00",
+    marginBottom: "20px",
   },
   section: {
-    marginBottom: "30px",
+    marginBottom: "24px",
     padding: "20px",
-    backgroundColor: "#1c1c1c", // Dark gray for cards
+    backgroundColor: "#1c1c1c",
     borderRadius: "12px",
     boxShadow: "0 2px 6px rgba(255, 143, 0, 0.3)",
   },
+  field: {
+    marginBottom: "15px",
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
   label: {
-    marginRight: "10px",
     fontWeight: "bold",
     color: "#ff8f00",
   },
+  hint: {
+    color: "#bbb",
+    fontSize: "0.9rem",
+    marginBottom: "15px",
+  },
   select: {
-    padding: "8px 12px",
+    padding: "10px 12px",
     fontSize: "16px",
     borderRadius: "6px",
     backgroundColor: "#000",
@@ -352,12 +311,22 @@ const styles = {
     border: "1px solid #ff8f00",
     outline: "none",
   },
+  saveButton: {
+    padding: "12px 20px",
+    background: "#ff8f00",
+    borderRadius: "8px",
+    border: "none",
+    color: "#000",
+    fontWeight: "bold",
+    cursor: "pointer",
+    marginTop: "6px",
+  },
 };
 
-export default function AdminDashboard() {
+export default function AdminSettings() {
   return (
     <RequireAdmin>
-      <AdminDashboardInner />
+      <AdminSettingsInner />
     </RequireAdmin>
   );
 }

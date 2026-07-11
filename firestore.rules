@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Pancake Night security rules.
+// Admin + approved status are custom claims (set via scripts/setAdminClaim.mjs
+// and the /api/admin/approvals endpoint), so they can't be self-granted by
+// editing a Firestore document. New signups are unapproved until an admin
+// approves them at /admin/approvals.
+// Guest orders are created by /api/orders with the Admin SDK, which bypasses
+// these rules — that's why client-side order creation is admin-only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isApproved() {
+      return isAdmin() ||
+        (isSignedIn() && request.auth.token.approved == true);
+    }
+
+    match /orders/{orderId} {
+      // Boards, guest "my orders", and the leaderboard — approved users only
+      allow read: if isApproved();
+      // Guests create orders through /api/orders (server-validated)
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // Signup may create the own profile doc, but never pre-approved
+      // or with admin flags
+      allow create: if isAdmin() ||
+        (request.auth.uid == uid &&
+          request.resource.data.get('approved', false) == false &&
+          request.resource.data.get('admin', false) == false &&
+          request.resource.data.get('superadmin', false) == false);
+      // Users may edit their own profile but not their access flags
+      allow update: if isAdmin() ||
+        (request.auth.uid == uid &&
+          !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['approved', 'admin', 'superadmin']));
+      allow delete: if isAdmin();
+    }
+
+    match /config/{docId} {
+      allow read: if isApproved();
+      allow write: if isAdmin();
+    }
+
+    match /chatMessages/{messageId} {
+      allow read: if isApproved();
+      // You can only post as yourself, and messages have a length cap
+      allow create: if isApproved()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 300;
+      allow update, delete: if isAdmin();
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

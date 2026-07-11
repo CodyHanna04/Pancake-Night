@@ -1,216 +1,358 @@
+/* ============================================================
+   Pancake Night — global styles
+   Mobile-first, token-based. Same class names as before so all
+   pages keep working; visuals and responsiveness modernized.
+   ============================================================ */
+
+:root {
+  --orange: #ff8f00;
+  --orange-dark: #e07b00;
+  --yellow: #fbbf24;
+  --bg: #000000;
+  --surface: #1c1c1c;
+  --surface-2: #2a2a2a;
+  --surface-3: #333333;
+  --text: #ffffff;
+  --text-muted: #bbbbbb;
+  --text-faint: #888888;
+  --danger: #e53935;
+  --success: #2e7d32;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --header-h: 64px;
+}
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  height: 100%;
+  /* stop iOS/Android from inflating text on rotate */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
   height: 100%;
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
 }
 
-/* Makes the footer stick to the bottom on short pages */
+/* kill the gray tap flash on Android/iOS */
+a,
+button,
+input,
+label,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Footer sticks to the bottom on short pages */
 .layout-body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh; /* mobile browsers with collapsing URL bars */
 }
 
-/* Allows main content to grow and push the footer down */
 .layout-main {
   flex: 1;
 }
 
-/* === General Styles === */
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #000000; /* Black background */
-  color: #FFFFFF; /* White text */
-  min-height: 100vh;
-  padding: 20px;
-  margin: 0;
-}
-
-h2, h3 {
-  color: #ff8f00; /* Princeton orange for headings */
+h2,
+h3 {
+  color: var(--orange);
 }
 
 h1 {
   font-size: 2.5rem;
   margin-bottom: 20px;
-  font-family: cursive; 
+  font-family: cursive;
 }
 
 h2 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   margin-bottom: 20px;
 }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-bottom: 10px;
 }
 
-/* === Button Styles === */
+/* === Buttons: comfortable touch targets everywhere === */
 button {
   padding: 10px 20px;
-  border-radius: 5px;
-  background-color: #ff8f00; /* Princeton orange */
-  color: #ffffff; /* White text */
+  min-height: 44px; /* Apple HIG / Android touch minimum */
+  border-radius: var(--radius-sm);
+  background-color: var(--orange);
+  color: #000;
   border: none;
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-weight: lighter;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 button:hover {
-  background-color: #e60000; /* Darker Princeton orange for hover effect */
-  color: #ffffff;
+  background-color: var(--orange-dark);
 }
 
-/* === Header and Navbar === */
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* ============================================================
+   Header + dropdown navbar
+   ============================================================ */
 .header {
-  background-color: #ff8f00; /* Princeton orange */
-  color: #ffffff; /* White text */
-  padding: 20px;
-  padding-top: 0;
-  padding-bottom: 5px;
+  background-color: var(--orange);
+  color: #ffffff;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  position: fixed;
+  z-index: 100;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  margin-bottom: 80px;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  /* respect the iPhone notch / punch-holes */
+  padding: calc(6px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    6px calc(16px + env(safe-area-inset-left));
 }
 
-/* Main body styles */
-body {
-  font-family: 'Arial', sans-serif;
-  background-color: #000000; /* Black background */
-  color: #FFFFFF; /* White text */
-  min-height: 100vh;
+.logo-container {
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 1.7rem;
   margin: 0;
-  padding: 120px 0 0 0; /* ONLY top padding for fixed header */
-}
-
-/* Extra-small phones: just adjust top padding, no side padding */
-@media (max-width: 480px) {
-  body {
-    padding-top: 130px; /* a touch more room for the stacked header */
-  }
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
 }
 
 .navbar {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   text-decoration: none;
-  color: #ffffff; /* White links */
-  font-size: 1.2rem;
-  font-weight: bold;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
   text-transform: uppercase;
-  padding: 8px 16px;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
+  letter-spacing: 0.02em;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.801);
-  color: #000000; /* Black text on hover */
+  background-color: rgba(0, 0, 0, 0.18);
+  color: #fff;
 }
 
-/* === Order Submission Form Styles === */
-.order-submission-container {
-  background-color: #000000; /* Black background */
-  color: #000000; /* Princeton orange text */
-  padding: 20px;
-  border-radius: 10px;
-  max-width: 600px;
-  margin: 20px auto;
+/* --- dropdown groups --- */
+.nav-group {
+  position: relative;
+}
+
+.nav-caret {
+  font-size: 0.65em;
+  margin-left: 6px;
+  transition: transform 0.15s ease;
+}
+
+.nav-group.open .nav-caret {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 210px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-top: 80px;
+  z-index: 120;
 }
 
+.nav-dropdown .nav-link {
+  display: flex;
+  width: 100%;
+  text-transform: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.nav-dropdown .nav-link:hover {
+  background: rgba(255, 143, 0, 0.18);
+  color: var(--orange);
+}
+
+/* --- hamburger (hidden on desktop) --- */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 48px;
+  height: 44px;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.nav-burger span {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-burger.open span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.nav-burger.open span:nth-child(2) {
+  opacity: 0;
+}
+.nav-burger.open span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* --- mobile nav panel --- */
+@media (max-width: 900px) {
+  .nav-burger {
+    display: flex;
+  }
+
+  .navbar {
+    display: none;
+  }
+
+  .navbar.open {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: #141414;
+    border-bottom: 2px solid var(--orange);
+    box-shadow: var(--shadow);
+    padding: 8px calc(12px + env(safe-area-inset-right)) 12px
+      calc(12px + env(safe-area-inset-left));
+    max-height: calc(100dvh - 60px);
+    overflow-y: auto;
+  }
+
+  .navbar.open .nav-link {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .nav-group {
+    width: 100%;
+  }
+
+  /* dropdowns become inline accordions */
+  .nav-dropdown {
+    position: static;
+    min-width: 0;
+    border: none;
+    border-left: 3px solid var(--orange);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    margin: 0 0 4px 14px;
+    padding: 0;
+  }
+}
+
+/* ============================================================
+   Forms (order submission, guest)
+   ============================================================ */
 .order-submission-container {
-  font-family: Arial, sans-serif;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
   padding: 20px;
-  background-color: #333333;
+  background-color: var(--surface);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+.order-form {
+  width: 100%;
 }
 
 .order-input,
 .order-textarea {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #000000; /* Princeton orange border */
-  border-radius: 5px;
-  background-color: #ffffff; /* White background for input fields */
-  color: #000000; /* Black text inside input fields */
+  padding: 12px;
+  margin: 10px 0 5px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: #ffffff;
+  color: #000000;
+  /* 16px minimum stops iOS Safari from zooming in on focus */
+  font-size: 16px;
+  outline: none;
 }
 
-/* === Kitchen and Home Page Container Styles === */
-.kitchen-display-container,
-.home-orders-container {
-  background-color: #000000; /* Black background */
-  color: #ff8f00; /* Princeton orange text */
-  padding: 20px;
-  min-height: 100vh;
+.order-input:focus,
+.order-textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.35);
 }
 
-/* === Flex Layout for Status Columns === */
-.columns-container {
-  display: flex;
-  gap: 20px;
-  flex-wrap: nowrap;
-  width: 100%;
-}
-
-.order-column {
-  flex: 1;
-  background-color: #333333; /* Dark grey background for columns */
-  color: #ff8f00; /* Princeton orange text */
-  padding: 10px;
-  border-radius: 10px;
-  overflow-y: auto;
-}
-
-/* Order Card inside Columns */
-.order-card {
-  background-color: #ff8f00; /* Princeton orange background */
-  color: #000000; /* Black text */
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* === Home Orders Card (if needed) === */
-.orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-items: center;
-  margin-top: 20px;
-}
-
-/* === Responsive Adjustments === */
-@media (max-width: 768px) {
-  .columns-container {
-    flex-wrap: wrap;
-  }
-  .order-column {
-    width: 100%;
-    margin-bottom: 20px;
-  }
+.order-textarea {
+  min-height: 80px;
+  resize: vertical;
 }
 
 .options-container {
@@ -220,98 +362,168 @@ body {
 .options-list {
   list-style-type: none;
   padding: 0;
+  margin: 8px 0;
 }
 
 .checkbox-label {
-  font-size: 18px;
-  margin-bottom: 10px;
-  display: block;
-  position: relative;
-  color: #ff8f00; /* Princeton orange text for checkbox labels */
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  min-height: 44px; /* full-row touch target */
+  color: var(--orange);
+  cursor: pointer;
 }
 
 .order-checkbox {
-  margin-right: 10px;
-  width: 20px;
-  height: 20px;
+  margin-right: 12px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
-  border-radius: 5px;
-}
-
-.order-checkbox:checked {
-  background-color: #ff8f00; /* Princeton orange when checked */
-  border-color: #ff8f00;
-  
+  accent-color: var(--orange); /* native orange checkboxes on all platforms */
 }
 
 .submit-button {
-  background-color: #ff8f00; /* Princeton orange button */
-  color: #ffffff; /* White text */
-  padding: 10px 20px;
+  background-color: var(--orange);
+  color: #000;
+  padding: 12px 20px;
   font-size: 16px;
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
 }
 
 .submit-button:hover {
-  background-color: #e67e00; /* Darker orange for hover */
+  background-color: var(--orange-dark);
 }
 
-.order-textarea {
-  width: 100%;
-  padding: 10px;
-  font-size: 16px;
-  margin-top: 10px;
-  border-radius: 5px;
-  border: 1px solid #000000; /* Princeton orange border */
+/* ============================================================
+   Kitchen + Home boards
+   ============================================================ */
+.kitchen-display-container,
+.home-orders-container {
+  background-color: var(--bg);
+  color: var(--orange);
+  padding: 16px;
+  min-height: 60vh;
 }
 
-.order-input {
+.columns-container {
+  display: grid;
+  /* auto-fits: 4-up on desktop, 2-up on tablets, 1-up on phones */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
   width: 100%;
-  padding: 10px;
-  font-size: 16px;
-  margin-top: 10px;
-  border-radius: 5px;
-  border: 1px solid #000000; /* Princeton orange border */
+  align-items: start;
 }
-/* === Notification Styles === */
+
+.order-column {
+  background-color: var(--surface);
+  color: var(--orange);
+  padding: 12px;
+  border-radius: var(--radius);
+  min-height: 120px;
+}
+
+.order-card {
+  background-color: var(--orange);
+  color: #000000;
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  overflow-wrap: break-word;
+}
+
+.order-card h4 {
+  margin: 0 0 6px;
+}
+
+.order-card p {
+  margin: 4px 0;
+}
+
+.order-card button {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+
+.order-card button:hover {
+  background: #000;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  margin-top: 20px;
+}
+
+/* ============================================================
+   Notifications
+   ============================================================ */
 .notification {
-  position: fixed; /* Fix the notification at a specific position */
-  right: 20px; /* Align it to the right side of the screen */
-  background-color: #4caf50; /* Example: change to your preferred color */
-  color: white; /* White text color */
-  padding: 10px 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 9999; /* Ensure it stays on top of other content */
+  position: fixed;
+  top: calc(76px + env(safe-area-inset-top));
+  right: 16px;
+  max-width: calc(100vw - 32px);
+  background-color: #4caf50;
+  color: white;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  z-index: 9999;
   transition: opacity 0.3s ease-in-out;
 }
 
-/* Optional: Hide the notification after a short time */
 .notification.hidden {
   opacity: 0;
 }
 
+/* ============================================================
+   Order page layout (form + recent orders sidebar)
+   ============================================================ */
 .order-page-layout {
   display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-}
-
-/* Stack on mobile */
-@media (max-width: 768px) {
-  .order-page-layout {
-    flex-direction: column;
-  }
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0 12px 24px;
 }
 
 .recent-orders-container {
-  flex: 0 0 280px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 1rem;
-  backdrop-filter: blur(6px);
+}
+
+/* side-by-side on wide screens, sidebar scrolls with you */
+@media (min-width: 1024px) {
+  .order-page-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 600px) 300px;
+    justify-content: center;
+    align-items: start;
+    gap: 24px;
+    padding-top: 20px;
+  }
+
+  .order-submission-container {
+    margin: 0;
+  }
+
+  .recent-orders-container {
+    position: sticky;
+    top: calc(var(--header-h) + 16px);
+    margin: 0;
+  }
 }
 
 .recent-help-text {
@@ -340,6 +552,7 @@ body {
 .recent-order-header {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-weight: 600;
   margin-bottom: 0.25rem;
 }
@@ -359,28 +572,25 @@ body {
   font-size: 0.9rem;
 }
 
-.order-submission-container {
-  width: 100%;
-  padding-right: 1.5rem;   /* <-- fixes textboxes hitting the edge */
-  padding-left: 1rem;
-  box-sizing: border-box;
-}
-
+/* ============================================================
+   Chat widget
+   ============================================================ */
 .chat-widget-container {
   position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
+  right: calc(1rem + env(safe-area-inset-right));
+  bottom: calc(1rem + env(safe-area-inset-bottom));
   z-index: 9999;
 }
 
 .chat-toggle-button {
   border: none;
   border-radius: 999px;
-  padding: 0.6rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.7rem 1.1rem;
+  min-height: 48px;
+  font-size: 0.95rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-  background: #fbbf24; /* warm pancake-y yellow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  background: var(--yellow);
   color: #111827;
   font-weight: 600;
 }
@@ -388,13 +598,13 @@ body {
 .chat-panel {
   position: absolute;
   right: 0;
-  bottom: 3.25rem;
-  width: 280px;
-  max-height: 380px;
+  bottom: 3.5rem;
+  width: min(320px, calc(100vw - 2rem));
+  max-height: min(420px, 70dvh);
   background: #111827;
   color: #f9fafb;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -405,27 +615,14 @@ body {
   background: #1f2937;
   font-weight: 600;
   font-size: 0.95rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-body {
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-
-.chat-name-row {
-  padding: 0.4rem 0.75rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-.chat-name-input {
-  width: 100%;
-  padding: 0.3rem 0.5rem;
-  border-radius: 8px;
-  border: none;
-  font-size: 0.8rem;
-  box-sizing: border-box;
+  min-height: 0;
 }
 
 .chat-messages {
@@ -433,6 +630,7 @@ body {
   padding: 0.5rem 0.75rem;
   overflow-y: auto;
   font-size: 0.85rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .chat-message {
@@ -455,10 +653,11 @@ body {
   border-radius: 10px;
   padding: 0.3rem 0.5rem;
   margin-top: 0.1rem;
+  overflow-wrap: break-word;
 }
 
 .chat-message-self .chat-message-text {
-  background: #fbbf24;
+  background: var(--yellow);
   color: #111827;
 }
 
@@ -470,38 +669,36 @@ body {
 
 .chat-input {
   flex: 1;
-  padding: 0.4rem 0.5rem;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
   border-radius: 999px;
   border: none;
-  font-size: 0.85rem;
-  box-sizing: border-box;
+  font-size: 16px; /* no iOS zoom */
 }
 
 .chat-send-button {
   border: none;
   border-radius: 999px;
-  padding: 0 0.75rem;
-  font-size: 0.8rem;
+  padding: 0 0.9rem;
+  min-height: 40px;
+  font-size: 0.85rem;
   cursor: pointer;
   background: #10b981;
   color: #ecfdf5;
   font-weight: 600;
 }
 
-/* Login Page Layout */
+/* ============================================================
+   Login / Signup
+   ============================================================ */
 .login-page-container {
-  min-height: 100vh;
+  min-height: calc(100dvh - var(--header-h));
   display: flex;
   justify-content: center;
   align-items: center;
-
-  /* make sure we have side padding on all screen sizes */
-  padding: 1rem 2rem;
-
-  background: #0f0f0f; /* dark background */
+  padding: 2rem 1.25rem;
 }
 
-/* Login Form Card */
 .login-form {
   width: 100%;
   max-width: 380px;
@@ -512,13 +709,9 @@ body {
   text-align: center;
   color: #f8f8f8;
   border: 1px solid rgba(255, 255, 255, 0.08);
-
-  /* this guarantees space from the edges even on tiny screens */
   margin: 0 auto;
 }
 
-
-/* Header */
 .login-form h2 {
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
@@ -531,14 +724,13 @@ body {
   margin-bottom: 1.5rem;
 }
 
-/* Inputs */
 .login-input {
   width: 100%;
-  padding: 0.7rem 1rem;
+  padding: 0.8rem 1rem;
   margin-bottom: 1rem;
   border-radius: 10px;
   border: none;
-  font-size: 1rem;
+  font-size: 16px; /* no iOS zoom */
   background: #262626;
   color: #fff;
   outline: none;
@@ -547,14 +739,14 @@ body {
 
 .login-input:focus {
   background: #333;
-  box-shadow: 0 0 0 2px #fbbf24; /* pancake yellow */
+  box-shadow: 0 0 0 2px var(--yellow);
 }
 
-/* Submit Button */
 .login-button {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background: #fbbf24; /* pancake yellow */
+  padding: 0.8rem 1rem;
+  min-height: 48px;
+  background: var(--yellow);
   color: #000;
   font-size: 1rem;
   font-weight: 600;
@@ -572,53 +764,15 @@ body {
   transform: scale(0.97);
 }
 
-/* Error Message */
 .login-error {
   margin-top: 1rem;
   color: #ff6b6b;
   font-size: 0.9rem;
 }
 
-/* === Mobile Header / Navbar Tweaks === */
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 14px 6px;
-  }
-
-  .logo-container {
-    margin-bottom: 8px;
-  }
-
-  .navbar {
-    width: 100%;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-
-  .nav-link {
-    font-size: 0.85rem;
-    padding: 6px 10px;
-  }
-}
-
-/* Extra-small phones */
-@media (max-width: 480px) {
-  body {
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 130px; /* a touch more room for the stacked header */
-  }
-
-  .header {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-}
-
-/* === Guest Page Layout === */
+/* ============================================================
+   Guest page extras
+   ============================================================ */
 .guest-page-container {
   max-width: 700px;
   margin: 0 auto;
@@ -626,51 +780,30 @@ body {
 }
 
 .guest-card {
-  background: #333333;
-  border-radius: 12px;
+  background: var(--surface-3);
+  border-radius: var(--radius);
   padding: 1.5rem 1.75rem;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+  box-shadow: var(--shadow);
 }
 
-/* Adjust guest layout on mobile only */
-@media (max-width: 768px) {
-  .order-page-layout {
-    padding-top: 0.5rem;
-    padding-bottom: 1.5rem;
+/* ============================================================
+   Small-screen tweaks
+   ============================================================ */
+@media (max-width: 480px) {
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  .logo {
+    font-size: 1.4rem;
+  }
+
+  .kitchen-display-container,
+  .home-orders-container {
+    padding: 12px 10px;
   }
 
   .order-submission-container {
-    padding: 1.25rem 1rem;
-  }
-
-  .order-input,
-  .order-textarea,
-  .submit-button {
-    font-size: 0.95rem;
-  }
-}
-
-/* === Override order layout so form is centered and recent stays right === */
-
-/* Desktop and larger only – mobile stays stacked */
-@media (min-width: 1024px) {
-  .order-page-layout {
-    /* stop flex from shifting the form */
-    display: block;
-    max-width: none;
-  }
-
-  /* Center the order submission box on the screen */
-  .order-submission-container {
-    max-width: 600px;              /* keep your original size */
-    margin: 80px auto 20px;        /* auto left/right = centered */
-  }
-
-  /* Keep recent orders on the right, independent of the form */
-  .recent-orders-container {
-    position: fixed;               /* pinned to screen, not affecting layout */
-    top: 140px;                    /* just under your fixed header */
-    right: 20px;
-    width: 280px;                  /* same width you were using */
+    padding: 16px 14px;
   }
 }

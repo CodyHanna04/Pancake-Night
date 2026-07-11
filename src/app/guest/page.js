@@ -2,21 +2,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import {
   collection,
   query,
   where,
   onSnapshot,
-  addDoc,
   orderBy,
   limit,
-  serverTimestamp,
   doc,
   getDoc,
 } from "firebase/firestore";
 import RequireAuth from "../components/RequireAuth";
 import { useAuth } from "../context/AuthContext";
+import { GUEST_PANCAKE_OPTIONS, GUEST_COOLDOWN_MS } from "@/lib/constants";
+import {
+  isWithinOrderingWindow,
+  describeOrderingWindow,
+  DEFAULT_SCHEDULE,
+} from "@/lib/orderWindow";
 
 function GuestPageInner() {
   const { user } = useAuth();
@@ -26,7 +30,7 @@ function GuestPageInner() {
   const [notes, setNotes] = useState("");
   const [notification, setNotification] = useState(null);
 
-  // 15-minute cooldown state
+  // Cooldown state (client-side display only — the API enforces it for real)
   const [canOrder, setCanOrder] = useState(true);
   const [timeLeft, setTimeLeft] = useState(null); // minutes
   const [lastOrderTimeMs, setLastOrderTimeMs] = useState(null);
@@ -34,57 +38,21 @@ function GuestPageInner() {
   const [myOrders, setMyOrders] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 🔧 Guest ordering schedule / toggle (configurable)
   const [guestOrderingEnabled, setGuestOrderingEnabled] = useState(true);
-  const [schedule, setSchedule] = useState({
-    dayOfWeek: 3,  // 0=Sun...6=Sat, 3 = Wednesday
-    startHour: 22, // 10 PM
-    endHour: 0,    // 0 = midnight (crosses midnight window)
-  });
+  const [schedule, setSchedule] = useState(DEFAULT_SCHEDULE);
   const [isWithinWindow, setIsWithinWindow] = useState(true);
 
-  // ------- Helpers for time window (America/New_York) -------
+  const notify = (message, ms = 4000) => {
+    setNotification(message);
+    setTimeout(() => setNotification(null), ms);
+  };
 
-  function computeIsWithinWindow(currentSchedule, enabled) {
-    if (!enabled) return false;
-
-    const now = new Date();
-    const nyString = now.toLocaleString("en-US", {
-      timeZone: "America/New_York",
-    });
-    const nyDate = new Date(nyString);
-
-    const dow = nyDate.getDay();   // 0–6
-    const hour = nyDate.getHours(); // 0–23
-
-    const dayOfWeek = currentSchedule.dayOfWeek ?? 3;
-    const startHour = currentSchedule.startHour ?? 22;
-    const endHour = currentSchedule.endHour ?? 0;
-
-    if (dow !== dayOfWeek) {
-      return false;
-    }
-
-    // If endHour > startHour: simple window (e.g., 10 → 18)
-    // If endHour <= startHour: cross-midnight (e.g., 22 → 0)
-    if (endHour > startHour) {
-      return hour >= startHour && hour < endHour;
-    } else if (endHour < startHour) {
-      // Crosses midnight: 22 → 0 = 10PM–12AM
-      return hour >= startHour || hour < endHour;
-    } else {
-      // startHour === endHour -> whole day
-      return true;
-    }
-  }
-
-  // ------- Load guest ordering config (for admin control) -------
-
+  // Live guest-ordering config — admin toggles take effect immediately
   useEffect(() => {
-    async function fetchGuestConfig() {
-      try {
-        const configRef = doc(db, "config", "guestOrdering");
-        const snap = await getDoc(configRef);
+    const configRef = doc(db, "config", "guestOrdering");
+    const unsub = onSnapshot(
+      configRef,
+      (snap) => {
         if (snap.exists()) {
           const data = snap.data();
           setGuestOrderingEnabled(
@@ -92,56 +60,51 @@ function GuestPageInner() {
           );
           setSchedule({
             dayOfWeek:
-              typeof data.dayOfWeek === "number" ? data.dayOfWeek : 3,
+              typeof data.dayOfWeek === "number"
+                ? data.dayOfWeek
+                : DEFAULT_SCHEDULE.dayOfWeek,
             startHour:
-              typeof data.startHour === "number" ? data.startHour : 22,
-            endHour: typeof data.endHour === "number" ? data.endHour : 0,
+              typeof data.startHour === "number"
+                ? data.startHour
+                : DEFAULT_SCHEDULE.startHour,
+            endHour:
+              typeof data.endHour === "number"
+                ? data.endHour
+                : DEFAULT_SCHEDULE.endHour,
           });
         } else {
-          // no config doc -> use defaults above
           setGuestOrderingEnabled(true);
+          setSchedule(DEFAULT_SCHEDULE);
         }
-      } catch (err) {
+      },
+      (err) => {
         console.error("Error loading guest ordering config:", err);
-        // Fallback to defaults if config fails
         setGuestOrderingEnabled(true);
       }
-    }
+    );
 
-    fetchGuestConfig();
+    return () => unsub();
   }, []);
 
-  // Recompute isWithinWindow on schedule / enabled change, and every minute
+  // Recompute window flag on config change and every minute
   useEffect(() => {
     function updateWindow() {
-      setIsWithinWindow(computeIsWithinWindow(schedule, guestOrderingEnabled));
+      setIsWithinWindow(isWithinOrderingWindow(schedule, guestOrderingEnabled));
     }
 
     updateWindow();
-
-    const interval = setInterval(updateWindow, 60000); // every 60s
+    const interval = setInterval(updateWindow, 60000);
     return () => clearInterval(interval);
   }, [schedule, guestOrderingEnabled]);
 
-  // ------- Load the user's profile name from Firestore -------
-
+  // Load the user's profile name
   useEffect(() => {
     if (!user) return;
 
     async function fetchProfile() {
       try {
-        const userDocRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userDocRef);
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.name) {
-            setProfileName(data.name);
-          } else {
-            setProfileName("");
-          }
-        } else {
-          setProfileName("");
-        }
+        const snap = await getDoc(doc(db, "users", user.uid));
+        setProfileName(snap.exists() ? snap.data().name || "" : "");
       } catch (err) {
         console.error("Error loading user profile:", err);
         setProfileName("");
@@ -151,8 +114,7 @@ function GuestPageInner() {
     fetchProfile();
   }, [user]);
 
-  // ------- Listen to this user's recent orders (for cooldown + status) -------
-
+  // Listen to this user's recent orders (cooldown display + status tracking)
   useEffect(() => {
     if (!user) return;
 
@@ -170,7 +132,6 @@ function GuestPageInner() {
       }));
       setMyOrders(orders);
 
-      // Use the most recent order to enforce 15 min rule
       if (orders.length > 0 && orders[0].createdAt?.toMillis) {
         const lastMs = orders[0].createdAt.toMillis();
         setLastOrderTimeMs(lastMs);
@@ -186,111 +147,84 @@ function GuestPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Update timeLeft every 30s while under cooldown
+  // Tick the cooldown countdown every 30s
   useEffect(() => {
     if (!lastOrderTimeMs) return;
 
     const interval = setInterval(() => {
       updateCooldownFromTimestamp(lastOrderTimeMs);
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [lastOrderTimeMs]);
 
   const updateCooldownFromTimestamp = (lastMs) => {
-    const now = Date.now();
-    const diff = now - lastMs;
-    const COOLDOWN = 15 * 60 * 1000; // 15 minutes
+    const diff = Date.now() - lastMs;
 
-    if (diff >= COOLDOWN) {
+    if (diff >= GUEST_COOLDOWN_MS) {
       setCanOrder(true);
       setTimeLeft(null);
     } else {
-      const remainingMs = COOLDOWN - diff;
-      const remainingMinutes = Math.ceil(remainingMs / 60000);
       setCanOrder(false);
-      setTimeLeft(remainingMinutes);
+      setTimeLeft(Math.ceil((GUEST_COOLDOWN_MS - diff) / 60000));
     }
   };
 
-  // ------- Form logic -------
-
   const handleOptionChange = (e) => {
     const { value, checked } = e.target;
-    if (checked) {
-      setSelectedOptions((prev) => [...prev, value]);
-    } else {
-      setSelectedOptions((prev) => prev.filter((opt) => opt !== value));
-    }
+    setSelectedOptions((prev) =>
+      checked ? [...prev, value] : prev.filter((opt) => opt !== value)
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return;
-
-    // Check global toggle
-    if (!guestOrderingEnabled) {
-      setNotification("Guest ordering is currently disabled.");
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-
-    // Check time window (Wed 10pm–12am ET, or whatever config says)
-    const withinWindow = computeIsWithinWindow(schedule, guestOrderingEnabled);
-    if (!withinWindow) {
-      setNotification(
-        "Guest ordering is only open on Wednesday from 10:00 PM to 12:00 AM (Eastern)."
-      );
-      setTimeout(() => setNotification(null), 4000);
-      return;
-    }
-
-    // 15-minute per-guest cooldown
-    if (!canOrder) {
-      setNotification("You need to wait before placing another order.");
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
+    if (!user || isSubmitting) return;
 
     if (selectedOptions.length === 0) {
-      setNotification("Please select at least one option.");
-      setTimeout(() => setNotification(null), 3000);
+      notify("Please select at least one option.", 3000);
       return;
     }
-
-    const displayName = profileName || user.email || "Guest";
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "orders"), {
-        userId: user.uid,
-        name: displayName,
-        selectedOptions,
-        notes,
-        status: "Pending",
-        createdAt: serverTimestamp(),
+      // The server re-checks the window, enabled flag, and cooldown
+      const token = await user.getIdToken();
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ selectedOptions, notes }),
       });
 
-      setNotification("Order submitted! You can order again in 15 minutes.");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        notify(data.error || "Failed to submit order. Please try again.");
+        return;
+      }
+
+      notify("Order submitted! You can order again in 15 minutes.");
       setSelectedOptions([]);
       setNotes("");
 
-      // Optimistically lock ordering for 15 minutes
+      // Optimistically lock ordering until the snapshot catches up
       setCanOrder(false);
       setTimeLeft(15);
       setLastOrderTimeMs(Date.now());
     } catch (err) {
       console.error("Error placing order:", err);
-      setNotification("Failed to submit order. Please try again.");
+      notify("Failed to submit order. Please try again.");
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setNotification(null), 4000);
     }
   };
 
   const displayName = profileName || user?.email || "Guest";
+  const windowLabel = describeOrderingWindow(schedule);
 
-  // Final combined flag: can this user click Submit *right now*?
   const canSubmitNow =
     guestOrderingEnabled && isWithinWindow && canOrder && !isSubmitting;
 
@@ -350,8 +284,7 @@ function GuestPageInner() {
               marginBottom: "10px",
             }}
           >
-            Guest ordering is only open on Wednesday from 10:00 PM to 12:00 AM
-            (Eastern).
+            Guest ordering is only open {windowLabel}.
           </p>
         )}
 
@@ -365,22 +298,20 @@ function GuestPageInner() {
         <form onSubmit={handleSubmit} className="order-form">
           <div className="options-container">
             <ul className="options-list">
-              {["Plain", "Chocolate Chip", "Banana", "Blueberry"].map(
-                (option) => (
-                  <li key={option}>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        value={option}
-                        checked={selectedOptions.includes(option)}
-                        onChange={handleOptionChange}
-                        className="order-checkbox"
-                      />
-                      {option}
-                    </label>
-                  </li>
-                )
-              )}
+              {GUEST_PANCAKE_OPTIONS.map((option) => (
+                <li key={option}>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      value={option}
+                      checked={selectedOptions.includes(option)}
+                      onChange={handleOptionChange}
+                      className="order-checkbox"
+                    />
+                    {option}
+                  </label>
+                </li>
+              ))}
             </ul>
           </div>
 

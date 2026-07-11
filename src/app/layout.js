@@ -4,8 +4,16 @@ import HeaderClient from "./components/HeaderClient";
 import Footer from "./components/Footer";
 
 export const metadata = {
-  title: "KDS System",
-  description: "Kitchen Display System for Pancake Night",
+  title: "Pancake Night",
+  description: "Order management for Pancake Night",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // viewport-fit=cover lets the header/chat respect iPhone safe areas
+  viewportFit: "cover",
+  themeColor: "#ff8f00",
 };
 
 export default function Layout({ children }) {
