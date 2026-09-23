@@ -212,7 +212,7 @@ function OrderPageInner() {
               onKeyDown={(e) => {
                 if (e.key === "Escape") setShowSuggestions(false);
               }}
-              placeholder="Name (e.g., John D)"
+              placeholder="Name (e.g., Clarence P)"
               required
               className="order-input"
               style={{ width: "100%" }}

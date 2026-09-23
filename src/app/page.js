@@ -29,6 +29,7 @@ function HomeOrdersInner() {
   const [orders, setOrders] = useState([]);
   const [notification, setNotification] = useState(null);
   const [clearingDone, setClearingDone] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const thresholds = useWaitThresholds();
   const now = useNowTicker(30000);
@@ -100,11 +101,18 @@ function HomeOrdersInner() {
     }
   };
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleOrders = normalizedQuery
+    ? orders.filter((order) =>
+        order.name?.toLowerCase().includes(normalizedQuery)
+      )
+    : orders;
+
   const groupedOrders = Object.fromEntries(
     BOARD_STATUSES.map((status) => [status, []])
   );
 
-  orders.forEach((order) => {
+  visibleOrders.forEach((order) => {
     if (groupedOrders[order.status]) {
       groupedOrders[order.status].push(order);
     }
@@ -116,6 +124,36 @@ function HomeOrdersInner() {
       <ChatWidget />
 
       <h2 className="text-2xl font-bold">Current Orders</h2>
+
+      <div style={{ position: "relative", maxWidth: "320px", margin: "0 auto 16px" }}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name…"
+          className="order-input"
+          style={{ width: "100%", margin: 0 }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            aria-label="Clear search"
+            style={{
+              position: "absolute",
+              right: "6px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              minHeight: "28px",
+              padding: "2px 10px",
+              fontSize: "0.75rem",
+              background: "rgba(0, 0, 0, 0.8)",
+              color: "#fff",
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       {notification && <div className="notification">{notification}</div>}
 

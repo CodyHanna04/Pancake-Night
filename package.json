@@ -2,6 +2,12 @@
   "name": "kds-system",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "overrides": {
+    "jose": "$jose"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,7 +23,7 @@
     "firebase": "^11.6.0",
     "firebase-admin": "^14.1.0",
     "framer-motion": "^12.7.3",
-    "jose": "^6.2.3",
+    "jose": "^5.9.6",
     "lucide-react": "^0.487.0",
     "next": "^15.5.9",
     "qrcode": "^1.5.4",
